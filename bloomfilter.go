@@ -23,7 +23,7 @@ func myMurmurHash(key string, size int32) int32 {
 }
 
 type Bloomfilter struct {
-	filter []bool
+	filter []bool //change to bit array instead
 	size   int32
 }
 
