@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -17,8 +18,8 @@ func preparedataStage(data []int) <-chan int {
 }
 
 /*
-for-select-done channel pattern to prevent go routine leak
-where go routine can exit based on done channel closed by the parent or caller
+Eaxmple: for-select-done channel pattern to prevent go routine leak
+by making go routine can exit based on done channel closed by the parent or caller
 */
 func squaredataStage(in <-chan int, done <-chan bool) <-chan int {
 	out := make(chan int)
@@ -35,12 +36,20 @@ func squaredataStage(in <-chan int, done <-chan bool) <-chan int {
 	return out
 }
 
+var mutex sync.Mutex
+
+func testWaitGroup(wg *sync.WaitGroup, result *[]int, data int) {
+	defer wg.Done()
+	mutex.Lock()
+	*result = append(*result, data*2)
+	mutex.Unlock()
+}
+
 func main() {
 	mySlice := []int{1, 2, 3, 4}
-	//firstStageChannel := make(chan int)
-	//secondStageChannel := make(chan int)
 	done := make(chan bool)
 
+	//Example: Multi-stage synchronisation using go channel & done channale
 	firstStageChannel := preparedataStage(mySlice)
 	secondStageChannel := squaredataStage(firstStageChannel, done)
 
@@ -62,7 +71,24 @@ func main() {
 		}
 	}(done2)
 
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	close(done2)
+
+	//Example: WaitGroup & mutex - wg.Add, wg.Done, wg.Wait
+	var wg sync.WaitGroup
+	input := []int{1, 2, 3, 4, 5}
+	result := []int{}
+	for _, data := range input {
+		wg.Add(1)
+		go func() {
+			testWaitGroup(&wg, &result, data)
+		}()
+	}
+
+	wg.Wait()
+	fmt.Println(result)
+
+	//TODO: Confinement
+
 }
