@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 )
 
 func preparedataStage(data []int) <-chan int {
@@ -48,4 +49,20 @@ func main() {
 	}
 
 	close(done)
+
+	// Another example of done channel
+	done2 := make(chan bool)
+	go func(done2 <-chan bool) {
+		for {
+			select {
+			case <-done2:
+			default:
+				fmt.Println("printing until done...")
+			}
+		}
+	}(done2)
+
+	time.Sleep(3 * time.Second)
+
+	close(done2)
 }
